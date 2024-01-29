@@ -1,2 +1,8 @@
+# Virtual environment
 bicker_venv
+
+# Mac OS
 .DS_Store
+
+# MyPy type checking
+.mypy_cache
