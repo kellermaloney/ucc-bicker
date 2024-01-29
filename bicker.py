@@ -1,7 +1,13 @@
 import pandas as pd
 import numpy as np
 
-from data import load_input
+from data import BickereesSchema, MembersSchema, ScoresSchema, load_input
+from data.validate import check_all_input
+from utils import clr, cprint
+
+# Typing
+import numpy.typing as npt
+from pandera.typing import DataFrame
 
 DESIRED_FEMALE_AVERAGE = 3.5  # Each member's desired average for female bickerees
 DESIRED_MALE_AVERAGE = 3.5  # Each member's desired average for male bickerees
@@ -27,9 +33,9 @@ NORMALIZATION_MINIMUM = 5  # the minimum number of bicker conversations (of one 
 def main():
     # Change the name of the document
     scores_df, members_df, bickerees_df = load_input()
-
-    # Get all unique emails
-    emails = scores_df["member_email"].unique()
+    if not check_all_input(scores_df, members_df, bickerees_df):
+        cprint("Could not validate input, exiting.", clr.FAIL)
+        return
 
     # convert to numpy array
     arr = scores_df.to_numpy()  # Convert the DataFrame to a NumPy array for processing
