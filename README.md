@@ -1,4 +1,26 @@
-# Bicker.py Project README
+<h1 align="left">ucc-bicker</h1>
+
+<p>
+  <a href="https://github.com/kellermaloney/ucc-bicker/blob/main/LICENSE" target="_blank">
+    <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-black.svg" />
+  </a>
+  <br/>
+  <a href="https://github.com/kellermaloney" target="_blank">
+    <img alt="Github" src="https://img.shields.io/badge/GitHub-@kellermaloney-facf22.svg" />
+  </a>
+  <a href="https://www.linkedin.com/in/keller-maloney-130856187/" target="_blank">
+    <img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-@keller--maloney-facf22.svg" />
+  </a>
+  <br/>
+  <a href="https://github.com/scornz" target="_blank">
+    <img alt="Github" src="https://img.shields.io/badge/GitHub-@scornz-9C2C42.svg" />
+  </a>
+  <a href="https://linkedin.com/in/mscornavacca" target="_blank">
+    <img alt="LinkedIn" src="https://img.shields.io/badge/LinkedIn-@mscornavacca-9C2C42.svg" />
+  </a>
+</p>
+
+> A simple, quick Python script to facilitate the normalization of bicker scores for University Cottage Club (UCC) at Princeton University used in S'23 and S'24.
 
 ## Overview
 
@@ -9,13 +31,20 @@ The `bicker.py` script is designed to process and normalize scores from bicker. 
 3. Run the script. Each row of the output represents a bickeree. Included info is their raw score, normalized score, highest score, lowest score, the member that assigned that score, and a list of every member that bickered them. This format is to be used during discussions.
 4. Calculate the final score by averaging (after normalizing) the bicker score (range = 1-5) and the discussion score (range = -1, 0, 1). Traditionally, a weight of 2/3 has been applied to the bicker score and 1/3 to the discussion score.
 
+## Requirements
+
+- Python 3.12 ([download](https://www.python.org/downloads/))
+- `pipenv` (call `pip install pipenv` globally)
+- VSCode (note: select the Python interpreter used by `pipenv` so syntax highlighting is correct)
+
 ## How to Run
 
-1. Ensure that Python 3 and the required libraries (`pandas` and `numpy`) are installed. Start a virtual environment and run `pip install -r requirements.txt`.
-2. Place the input CSV file in the same directory as the `bicker.py` script.
-3. Run the script using the command `python bicker.py`.
-4. The output CSV file `bicker_output.csv` will be generated in the same directory.
-5. Try running it with the 'mock_bicker_responses.csv' to get a mock output!
+1. Ensure requirements are install correctly.
+2. Navigate to project folder and call `pipenv install`, then `pipenv shell` to enter the virtual environment.
+3. Place the input CSV file in the same directory as the `bicker.py` script.
+4. Run the script using the command `python bicker.py`.
+5. The output CSV file `bicker_output.csv` will be generated in the same directory.
+6. Try running it with the 'mock_bicker_responses.csv' to get a mock output!
 
 ## For Bicker Chairs
 
