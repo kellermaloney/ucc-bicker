@@ -6,3 +6,6 @@ bicker_venv
 
 # MyPy type checking
 .mypy_cache
+
+# Ignore output
+bicker_output.csv
