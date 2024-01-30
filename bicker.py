@@ -1,6 +1,7 @@
 from typing import Dict
 import pandas as pd
 import numpy as np
+from analyze import calculate_ranks_and_percentiles
 
 from data import BickereesSchema, MembersSchema, OutputDict, ScoresSchema, load_input
 from data.validate import check_all_input
@@ -129,13 +130,8 @@ def main():
 
     output = output.merge(bickeree_stats, on="bickeree_number")
 
-    # Rank the bickerees by their weighted score, where 1 is the best and N is the worst
-    output["rank"] = (
-        output["weighted_score"].rank(ascending=False, method="min").astype(int)
-    )
-    # Calculate percentiles, where 0.99 means the bickeree is in the top 1% of all bickerees,
-    # and 0.01 means the bickeree is in the bottom 1% of all bickerees
-    output["percentile"] = output["weighted_score"].rank(pct=True, ascending=True)
+    # Append the rank and percentile columns
+    output = calculate_ranks_and_percentiles(output)
 
     output.set_index("bickeree_number", inplace=True)
     output.to_csv("bicker_output.csv")
