@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import TypeVar, TypedDict
 import pandas as pd
 import numpy as np
 import pandera as pa
@@ -31,6 +31,15 @@ class BickereesSchema(pa.DataFrameModel):
 
     bickeree_number: int = pa.Field()
     bickeree_name: str = pa.Field()
+
+
+class OutputDict(TypedDict):
+    """The schema for the output data. Validates the data types, and mandates
+    specific column names."""
+
+    bickeree_number: int
+    bickeree_name: str
+    score: int
 
 
 T = TypeVar("T", bound=pa.DataFrameModel)

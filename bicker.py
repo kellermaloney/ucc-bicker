@@ -1,7 +1,8 @@
+from typing import Dict
 import pandas as pd
 import numpy as np
 
-from data import BickereesSchema, MembersSchema, ScoresSchema, load_input
+from data import BickereesSchema, MembersSchema, OutputDict, ScoresSchema, load_input
 from data.validate import check_all_input
 from utils import clr, cprint
 
@@ -12,6 +13,15 @@ from pandera.typing import DataFrame
 DESIRED_FEMALE_AVERAGE = 3.5  # Each member's desired average for female bickerees
 DESIRED_MALE_AVERAGE = 3.5  # Each member's desired average for male bickerees
 NORMALIZATION_MINIMUM = 5  # the minimum number of bicker conversations (of one gender) that a member must complete in order for their scores to be normalized
+
+
+"""
+A list of quantiles that will be used to determine the cutoffs for each percentile.
+If someone is in the 50th percentile, they will be assigned a score modifier of 1.0.
+If someone is in the 75th percentile, they will be assigned a score modifier of 0.9.
+If someone is in the 85th percentile, they will be assigned a score modifier of 0.8, and so on.
+"""
+PERCENTILE_CUTOFFS = {0.5: 1.0, 0.75: 0.9, 0.85: 0.8, 0.9: 0.7, 0.95: 0.6, 0.99: 0.4}
 
 #############################################################################################################
 # INPUT:    csv of with the following columns: member emails, bicker numbers, bicker scores, and gender
@@ -32,18 +42,63 @@ NORMALIZATION_MINIMUM = 5  # the minimum number of bicker conversations (of one 
 
 def main():
     # Change the name of the document
-    scores_df, members_df, bickerees_df = load_input()
-    if not check_all_input(scores_df, members_df, bickerees_df):
+    scores, members, bickerees = load_input()
+    if not check_all_input(scores, members, bickerees):
         cprint("Could not validate input, exiting.", clr.FAIL)
         return
 
-    # convert to numpy array
-    arr = scores_df.to_numpy()  # Convert the DataFrame to a NumPy array for processing
+    # All member emails
+    emails: npt.NDArray[np.str_] = members["member_email"].unique()
 
-    # extract the unique names
-    emails, indices = np.unique(
-        arr[:, 0], return_index=True
-    )  # Extract unique member emails from the array
+    # Initialize the output dictionary
+    output: Dict[str, OutputDict] = {}
+
+    # Group the scores by member email
+    # Then count each member's score up, and normalize them (take percentage
+    # Take the value of this index, using unstack, and create new dataframe
+    score_percentages = (
+        scores.groupby("member_email")["score"]
+        .value_counts(normalize=True)
+        .unstack(fill_value=0)
+    )
+
+    # The average score distribution of all members
+    avg_score_percentage = score_percentages.mean()
+
+    # The absolute
+    score_percentages["total_diff"] = (
+        score_percentages.subtract(avg_score_percentage, axis=1).abs().sum(axis=1)
+    )
+
+    # Calculate the percentile values
+    percentile_values = {
+        p: score_percentages["total_diff"].quantile(p) for p in PERCENTILE_CUTOFFS
+    }
+
+    # Function to determine the weight for a given Total_Difference value
+    def determine_weight(value):
+        for percentile, weight in sorted(PERCENTILE_CUTOFFS.items()):
+            if value <= percentile_values[percentile]:
+                return weight
+        return PERCENTILE_CUTOFFS[max(PERCENTILE_CUTOFFS)]
+
+    score_percentages["weight"] = score_percentages["total_diff"].apply(
+        determine_weight
+    )
+
+    score_percentages.reset_index(inplace=True)
+    # Add weight to original scores
+    weighted_scores = (
+        pd.merge(
+            scores, score_percentages[["member_email", "weight"]], on="member_email"
+        )
+        .groupby("bickeree_number")
+        .apply(lambda x: np.sum(x["score"] * x["weight"]) / np.sum(x["weight"]))  # type: ignore
+        .reset_index()
+        .rename(columns={0: "weighted_score"})
+    )
+
+    return
 
     # create an empty array to store the output
     master = np.empty(
@@ -53,12 +108,15 @@ def main():
     # iterate through the unique emails
     for i, email in enumerate(emails):
         # find all instances of the current email in the input array
-        mask = (
-            arr[:, 0] == email
+        mask: npt.NDArray[np.bool_] = (
+            scores_df["member_email"] == email
         )  # Create a boolean mask for rows with the current email
-        email_rows = arr[
+        email_rows = scores_df[
             mask
         ]  # Apply the mask to extract all rows for the current email
+
+        print(email_rows)
+        return
 
         # create a list of tuples containing the bickeree name and score and gender for that bickeree
         bickeree_scores = [
