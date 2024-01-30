@@ -136,6 +136,8 @@ def main():
     # Calculate percentiles, where 0.99 means the bickeree is in the top 1% of all bickerees,
     # and 0.01 means the bickeree is in the bottom 1% of all bickerees
     output["percentile"] = output["weighted_score"].rank(pct=True, ascending=True)
+
+    output.set_index("bickeree_number", inplace=True)
     output.to_csv("bicker_output.csv")
 
 
