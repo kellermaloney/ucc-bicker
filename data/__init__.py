@@ -16,7 +16,6 @@ class ScoresSchema(pa.DataFrameModel):
     member_email: str = pa.Field()
     bickeree_number: int = pa.Field()
     score: int = pa.Field()
-    gender: int = pa.Field()
 
 
 class MembersSchema(pa.DataFrameModel):
@@ -31,6 +30,7 @@ class BickereesSchema(pa.DataFrameModel):
 
     bickeree_number: int = pa.Field()
     bickeree_name: str = pa.Field()
+    bickeree_gender: int = pa.Field()
 
 
 class OutputDict(TypedDict):

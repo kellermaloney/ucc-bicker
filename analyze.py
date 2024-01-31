@@ -28,17 +28,21 @@ def calculate_scores(
         `output` (pd.DataFrame): The output DataFrame.
     """
 
+    score_percentages = scores.merge(
+        bickerees[["bickeree_number", "bickeree_gender"]], on="bickeree_number"
+    )
+
     # Group the scores by member email
     # Then count each member's score up, and normalize them (take percentage
     # Take the value of this index, using unstack, and create new dataframe
     score_percentages = (
-        scores.groupby(["member_email", "gender"])["score"]
+        score_percentages.groupby(["member_email", "bickeree_gender"])["score"]
         .value_counts(normalize=True)
         .unstack(fill_value=0)
     )
 
     # Calculate the average percentage by gender
-    average_percentages_by_gender = score_percentages.groupby("gender").mean()
+    average_percentages_by_gender = score_percentages.groupby("bickeree_gender").mean()
 
     # Calculate total_diff for each member within each gender group
     def calculate_total_diff(row: pd.Series, averages: pd.DataFrame):
@@ -109,6 +113,17 @@ def calculate_ranks_and_percentiles(output: pd.DataFrame):
     # Calculate percentiles, where 0.99 means the bickeree is in the top 1% of all bickerees,
     # and 0.01 means the bickeree is in the bottom 1% of all bickerees
     modified["percentile"] = output["weighted_score"].rank(pct=True, ascending=True)
+    # Calculate rank by gender
+    modified["rank_by_gender"] = (
+        modified.groupby("bickeree_gender")["weighted_score"]
+        .rank(ascending=False, method="min")
+        .astype(int)
+    )
+    # Calculate percentile by gender
+    modified["percentile_by_gender"] = modified.groupby("bickeree_gender")[
+        "weighted_score"
+    ].rank(pct=True, ascending=True)
+
     return modified
 
 
