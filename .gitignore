@@ -8,4 +8,4 @@ bicker_venv
 .mypy_cache
 
 # Ignore output
-bicker_output.csv
+*.csv
