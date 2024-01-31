@@ -2,6 +2,7 @@ from typing import Dict
 import pandas as pd
 import numpy as np
 from analyze import calculate_ranks_and_percentiles, grab_lowest_and_highest_scores
+from cleanup import replace_emails
 
 from data import BickereesSchema, MembersSchema, OutputDict, ScoresSchema, load_input
 from data.validate import check_all_input
@@ -110,6 +111,8 @@ def main():
     output = grab_lowest_and_highest_scores(scores, output)
     # Append the rank and percentile columns
     output = calculate_ranks_and_percentiles(output)
+    # Replace the emails with the member's name
+    output = replace_emails(members, output)
 
     output.set_index("bickeree_number", inplace=True)
     output.to_csv("bicker_output.csv")
