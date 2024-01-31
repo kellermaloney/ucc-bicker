@@ -1,6 +1,87 @@
 import numpy as np
 import pandas as pd
+
 from utils import clr, cprint
+
+# Typing
+from data import ScoresSchema, BickereesSchema
+from pandera.typing import DataFrame
+
+
+"""
+A list of quantiles that will be used to determine the cutoffs for each percentile.
+If someone is in the 50th percentile, they will be assigned a score modifier of 1.0.
+If someone is in the 75th percentile, they will be assigned a score modifier of 0.9.
+If someone is in the 85th percentile, they will be assigned a score modifier of 0.8, and so on.
+"""
+PERCENTILE_CUTOFFS = {0.5: 1.0, 0.75: 0.9, 0.85: 0.8, 0.9: 0.7, 0.95: 0.6, 0.99: 0.4}
+
+
+def calculate_scores(
+    scores: DataFrame[ScoresSchema], bickerees: DataFrame[BickereesSchema]
+):
+    """
+    Calculate the weighted score for each bickeree, and return a new DataFrame
+    with these columns added.
+
+        `scores` (DataFrame[ScoresSchema]): The scores DataFrame.
+        `output` (pd.DataFrame): The output DataFrame.
+    """
+
+    # Group the scores by member email
+    # Then count each member's score up, and normalize them (take percentage
+    # Take the value of this index, using unstack, and create new dataframe
+    score_percentages = (
+        scores.groupby("member_email")["score"]
+        .value_counts(normalize=True)
+        .unstack(fill_value=0)
+    )
+
+    # The average score distribution of all members
+    avg_score_percentage = score_percentages.mean()
+
+    # The absolute
+    score_percentages["total_diff"] = (
+        score_percentages.subtract(avg_score_percentage, axis=1).abs().sum(axis=1)
+    )
+
+    # Calculate the percentile values
+    percentile_values = {
+        p: score_percentages["total_diff"].quantile(p) for p in PERCENTILE_CUTOFFS
+    }
+
+    # Function to determine the weight for a given Total_Difference value
+    def determine_weight(value):
+        for percentile, weight in sorted(PERCENTILE_CUTOFFS.items()):
+            if value <= percentile_values[percentile]:
+                return weight
+        return PERCENTILE_CUTOFFS[max(PERCENTILE_CUTOFFS)]
+
+    score_percentages["weight"] = score_percentages["total_diff"].apply(
+        determine_weight
+    )
+
+    avg_scores = (
+        scores.groupby("bickeree_number")["score"]
+        .mean()
+        .reset_index()
+        .rename(columns={"score": "avg_score"})
+    )
+    score_percentages.reset_index(inplace=True)
+    # Add weight to original scores
+    weighted_scores = (
+        pd.merge(
+            scores, score_percentages[["member_email", "weight"]], on="member_email"
+        )
+        .groupby("bickeree_number")
+        .apply(lambda x: np.sum(x["score"] * x["weight"]) / np.sum(x["weight"]))  # type: ignore
+        .reset_index()
+        .rename(columns={0: "weighted_score"})
+    )
+
+    return pd.merge(weighted_scores, bickerees, on="bickeree_number").merge(
+        avg_scores, on="bickeree_number"
+    )
 
 
 def calculate_ranks_and_percentiles(output: pd.DataFrame):
