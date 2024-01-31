@@ -32,17 +32,22 @@ def calculate_scores(
     # Then count each member's score up, and normalize them (take percentage
     # Take the value of this index, using unstack, and create new dataframe
     score_percentages = (
-        scores.groupby("member_email")["score"]
+        scores.groupby(["member_email", "gender"])["score"]
         .value_counts(normalize=True)
         .unstack(fill_value=0)
     )
 
-    # The average score distribution of all members
-    avg_score_percentage = score_percentages.mean()
+    # Calculate the average percentage by gender
+    average_percentages_by_gender = score_percentages.groupby("gender").mean()
+
+    # Calculate total_diff for each member within each gender group
+    def calculate_total_diff(row: pd.Series, averages: pd.DataFrame):
+        # row.name[0] is the member_email, and 1 is the gender
+        return row.sub(averages.loc[row.name[1]], axis=0).abs().sum()  # type: ignore
 
     # The absolute
-    score_percentages["total_diff"] = (
-        score_percentages.subtract(avg_score_percentage, axis=1).abs().sum(axis=1)
+    score_percentages["total_diff"] = score_percentages.apply(
+        calculate_total_diff, axis=1, averages=average_percentages_by_gender
     )
 
     # Calculate the percentile values
