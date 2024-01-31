@@ -1,7 +1,7 @@
 from typing import Dict
 import pandas as pd
 import numpy as np
-from analyze import calculate_ranks_and_percentiles
+from analyze import calculate_ranks_and_percentiles, grab_lowest_and_highest_scores
 
 from data import BickereesSchema, MembersSchema, OutputDict, ScoresSchema, load_input
 from data.validate import check_all_input
@@ -106,30 +106,8 @@ def main():
         avg_scores, on="bickeree_number"
     )
 
-    # Function to randomly select one member from those who gave the lowest/highest score
-    def select_random_member(sub_df):
-        return np.random.choice(sub_df["member_email"])
-
-    # Group by bickeree_number and apply a custom function to find the member with the lowest and highest score
-    bickeree_stats = (
-        scores.groupby("bickeree_number")
-        .apply(
-            lambda x: pd.Series(
-                {
-                    "member_lowest_score": select_random_member(
-                        x[x["score"] == x["score"].min()]  # type: ignore
-                    ),
-                    "member_highest_score": select_random_member(
-                        x[x["score"] == x["score"].max()]  # type: ignore
-                    ),
-                }
-            )
-        )
-        .reset_index()
-    )
-
-    output = output.merge(bickeree_stats, on="bickeree_number")
-
+    # Add the lowest/highest scoring members
+    output = grab_lowest_and_highest_scores(scores, output)
     # Append the rank and percentile columns
     output = calculate_ranks_and_percentiles(output)
 
