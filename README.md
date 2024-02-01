@@ -64,7 +64,7 @@ $$W_i = f(U_i)$$
 
 4. We take the weighted members, and compute a weighted sum for each bickeree, where $S_{ik}$ is the raw score from 1-5 given by member $i$ to bickeree $k$ and $W_i$ is that member's weight determined by their unfairness score.
 
-$$T_k = \frac{\sum_{i=1}^{m} (S_{ik} \times W_i)}{\sum_{i=1}^{m} W_i}$$
+$$T_k = \left(\sum_{i=1}^{m} (S_{ik} \times W_i)\right) / \left(\sum_{i=1}^{m} W_i \right)$$
 
 5. These scores and averages are typically seperated by gender in order to account for natural discrepancies in normal voting practices.
 
