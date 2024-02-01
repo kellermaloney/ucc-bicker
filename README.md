@@ -40,11 +40,113 @@ The `bicker.py` script is designed to process and normalize scores from bicker. 
 ## How to Run
 
 1. Ensure requirements are install correctly.
-2. Navigate to project folder and call `pipenv install`, then `pipenv shell` to enter the virtual environment.
-3. Place the input CSV file in the same directory as the `bicker.py` script.
-4. Run the script using the command `python bicker.py`.
-5. The output CSV file `bicker_output.csv` will be generated in the same directory.
-6. Try running it with the 'mock_bicker_responses.csv' to get a mock output!
+2. Navigate to project folder and call `pipenv install`.
+3. Place the necessary CSV files (members, bickerees, and scores) in the project folder.
+4. Run the script with `pipenv run bicker <scores-filename> <members-filename> <bickerees-filename>`. Alternatively, use `pipenv run mock` to run with the provided mock data.
+
+## Explanation
+
+### Spring '24 (current)
+
+#### Steps
+
+1. Calculate club average distribution for scores given, that is, what percentage of all scores given were ones, twos, etc. for the entire club.
+2. Take each individual member's score distribution (that is, what percentage of a particular member's scores given were ones, twos, etc.) and get the difference from the club average. Sum these differences for each score category (one, two, three) to produce an unfairness score. The closer this unfairness score is to 0, the more "fair" the member's scores are, as they relate closer to the club's average distribution.
+   Let $F_i$ represent the unfairness score for member $i$, let $P_{ij}$ represent the percentage of score $j$ given out by member $i$, and $A_j$ be the average percentage of score $j$ across the entire club.
+
+$$U_i = \sum_{j=1}^{n} |P_{ij} - A_j|$$
+
+3. Given these unfairness scores, attribute a weight to each member where less weight is assigned to members who have higher unfairness scores, and more weight assigned to members who have a lower unfairness score. This weight for member $i$, $W_i$, is determined by a function based on last year's distribution of scores, $f(x)$.
+
+$$W_i = f(U_i)$$
+
+4. We take the weighted members, and compute a weighted sum for each bickeree, where $S_{ik}$ is the raw score from 1-5 given by member $i$ to bickeree $k$ and $W_i$ is that member's weight determined by their unfairness score.
+
+$$T_k = \frac{\sum_{i=1}^{m} (S_{ik} \times W_i)}{\sum_{i=1}^{m} W_i}$$
+
+5. These scores and averages are typically seperated by gender in order to account for natural discrepancies in normal voting practices.
+
+#### Example
+
+From a glance, the above steps can appear a bit complicated, but it's actually a lot simpler with an example. Let's say that the score distribution across the club is as follows:
+
+<div align="center">
+
+|  1  | 2   | 3   | 4   | 5   |
+| :-: | --- | --- | --- | --- |
+| 10% | 15% | 30% | 35% | 10% |
+
+</div>
+
+This means that out of ALL scores given out by members of the club, 10% of them were ones, 15% twos, 30% threes, 35% fours, and 10% fives. Now, let's consider these (purely hypothetical) members that have given out a bunch of scores during bicker:
+
+<div align="center">
+
+| Member | 1   | 2   | 3   | 4   | 5   |
+| :----: | --- | --- | --- | --- | --- |
+| Caleb  | 15% | 10% | 35% | 15% | 20% |
+| Stevie | 0%  | 0%  | 10% | 30% | 60% |
+|   MC   | 70% | 10% | 0%  | 0%  | 20% |
+| Carrie | 30% | 25% | 30% | 10% | 5%  |
+| Hunter | 0%  | 20% | 15% | 35% | 30% |
+
+</div>
+
+So we can see that Caleb, Carrie, and Hunter are relatively fair voters (with a spread distribution), while Stevie skews heavily towards 3+ ratings and MC skews heavily towards 2- ratings. Let's calculate their unfairness scores, by taking the absolute difference between each member's score distributions and the club's average.
+
+<div align="center">
+
+| Member | 1    | 2    | 3    | 4    | 5    | Unfairness |
+| :----: | ---- | ---- | ---- | ---- | ---- | ---------- |
+| Caleb  | 0.05 | 0.05 | 0.05 | 0.2  | 0.1  | 0.45       |
+| Stevie | 0.10 | 0.15 | 0.2  | 0.05 | 0.5  | 1.00       |
+|   MC   | 0.6  | 0.05 | 0.3  | 0.35 | 0.1  | 1.40       |
+| Carrie | 0.2  | 0.1  | 0    | 0.25 | 0.05 | 0.60       |
+| Hunter | 0.1  | 0.05 | 0.15 | 0    | 0.2  | 0.50       |
+
+</div>
+
+As we can see, Stevie and MC have 1.00+ unfairness scores, while the other three members hover around ~0.5. We then take this score, and according to a function from last year's data, convert that into the member's "weight". That is, when calculating a bickeree's scores, how "much" does this member's score matter in the bickeree's final score. Here are the calculated weights based on the listed unfairness scores:
+
+<div align="center">
+
+| Member | Unfairness | Weight |
+| :----: | ---------- | ------ |
+| Caleb  | 0.45       | 1.0    |
+| Stevie | 1.00       | 0.6    |
+|   MC   | 1.40       | 0.4    |
+| Carrie | 0.60       | 0.95   |
+| Hunter | 0.50       | 1.0    |
+
+</div>
+
+To demonstrate how this works, let's consider some example bickerees:
+
+<div align="center">
+
+| Member | Bickeree 1 | Bickeree 2 | Bickeree 3 |
+| :----: | ---------- | ---------- | ---------- |
+| Caleb  | 5          | N/A        | 4          |
+| Stevie | N/A        | 5          | 5          |
+|   MC   | 1          | 5          | 1          |
+| Carrie | N/A        | N/A        | 3          |
+| Hunter | N/A        | N/A        | 3          |
+
+</div>
+
+For bickeree 1, we see that MC gave a score of a 1, and Caleb gave a score of a 5. The score is calculated as a weighted average, as follows:
+
+$$\frac{5(1.0) + 1(0.4)}{1.0 + 0.4} \approx 3.857$$
+
+We see that since Caleb has a higher weight (due to his fair score distribution) his 5 means more than MC's 1, thus the final bickeree's score tends towards a 5.
+
+For bickeree 2, we see that both MC and Stevie gave a score of 5. In a weighted sum this would work out as $\frac{5(0.6) + 5(0.4)}{0.6 + 0.4} = 5$. This example is important to demonstrate that despite Stevie and MC having high unfairness values (and thus lower weights), the "value" of their fives does not actually change. Thus, receiving high scores from a notoriously low-score giver will not boost the value of a 5, and vice-versa for high-score givers.
+
+For bickeree 3, this is a normal score distribution, and we can see that despite receiving a high grade from Stevie, and a low grade from MC, the weighted average falls onto the members with higher weight, and ends up being $\approx 3.3$.
+
+### Spring '23 (deprecated)
+
+TO DO.
 
 ## For Bicker Chairs
 
