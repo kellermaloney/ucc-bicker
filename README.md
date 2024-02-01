@@ -46,6 +46,8 @@ The `bicker.py` script is designed to process and normalize scores from bicker. 
 
 ## Explanation
 
+These explanations exist for bicker chairs and interested members. These systems are designed to make the process more fair, and thus, knowledge of these algorithms should not be used to exploit.
+
 ### Spring '24 (current)
 
 #### Steps
@@ -146,10 +148,6 @@ For bickeree 3, this is a normal score distribution, and we can see that despite
 
 ### Spring '23 (deprecated)
 
-TO DO.
-
-## For Bicker Chairs
-
 This program adjusts the mean of every member's scores to 3 by adding or subtracting the same amount to each of their scores. This process of "normalizing" scores has pros and cons. Here are a few things to consider:
 
 **Pros:**
@@ -172,32 +170,41 @@ This program adjusts the mean of every member's scores to 3 by adding or subtrac
 4. Reduces the average mean score.
    - This has a psychological effect on the membership during discussions. The club will be less excited about a bickeree with a low normalized score despite a high relative score.
 
-NOTE: FEEL FREE TO ADJUST THE PROCESS OF NORMALIZATION TO SUIT YOUR NEEDS, OR IGNORE THAT COLUMN ALL TOGETHER!
-
 ## Input Format
 
-The input CSV file should have the following columns:
+The _input scores CSV_ file should have the following columns:
 
-- Email Address of member
-- Bickeree Number
-- Score
-- Gender
+- `member_email`: the email address of the member
+- `bickeree_number`: the number of the bickeree being scores
+- `score`: the score given by the member to the bickeree
+
+The _input members CSV_ file should have the following columns:
+
+- `member_email`: the email address of the member
+- `member_name`: the name of the member
+
+The _input bickerees CSV_ file should have the following columns:
+
+- `bickeree_number`: the number of the bickeree, used for scoring
+- `bickeree_name`: the name of the bickeree
+- `bickeree_gender`: the gender of the bickeree (0 for male, 1 for female, 2 for neither).
 
 ## Output Format
 
-The output CSV file will have the following columns:
+The _output CSV_ file will have the following columns:
 
-- Bickeree Number
-- Average Raw Score
-- Average Normalized Score
-- All Scores (and the member who gave the score)
-- Lowest Score/Member Name
-- Highest Score/Member Name
-- Scores Standard Deviation
+- `bickeree_number`: the number of the bickeree, used for scoring
+- `bickeree_name`: the name of the bickeree
+- `bickeree_gender`: the gender of the bickeree
+- `score`: the unweighted average score received by this bickeree
+- `weighted_score`: the weighted average calculated from "unfairness" scores as explained above
+- `member_lowest_score`: the name of the member who gave out the lowest score
+- `member_highest_score`: the name of the member who gave out the highest score
+- `rank`/`percentile`: the overall rank and overall percentile for this bickeree
+- `rank_by_gender`/`percentile_by_gender`: the overall rank and overall percentile for this bickeree, seperated by gender.
 
 The program also outputs the average male and female scores, the 5 lowest and highest scoring members.
 
 ## Notes
 
-- The normalization process is only applied if a member has completed a minimum number of bicker conversations, as defined by `NORMALIZATION_MINIMUM`.
 - Scores for non-binary individuals are not normalized in the current version of the script.
