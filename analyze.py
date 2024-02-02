@@ -17,6 +17,24 @@ If someone is in the 85th percentile, they will be assigned a score modifier of 
 PERCENTILE_CUTOFFS = {0.5: 1.0, 0.75: 0.9, 0.85: 0.8, 0.9: 0.7, 0.95: 0.6, 0.99: 0.4}
 
 
+"""
+A list of cutoffs for the total difference between a member's scores and the average scores,
+which will be used to determine the score modifier for each member. If a member's total difference
+is less than or equal to the value, they will be assigned the score modifier. If a member's total
+difference is greater than the last value, they will be assigned the score modifier of the last value.
+These values were calculated using 2023 data.
+
+"""
+TOTAL_DIFF_CUTOFFS = {
+    0.5512: 1.0,
+    0.6862: 0.9,
+    0.8023: 0.85,
+    1.0166: 0.6,
+    1.2798: 0.45,
+    1.3746: 0.30,
+}
+
+
 def calculate_scores(
     scores: DataFrame[ScoresSchema], bickerees: DataFrame[BickereesSchema]
 ):
@@ -54,17 +72,12 @@ def calculate_scores(
         calculate_total_diff, axis=1, averages=average_percentages_by_gender
     )
 
-    # Calculate the percentile values
-    percentile_values = {
-        p: score_percentages["total_diff"].quantile(p) for p in PERCENTILE_CUTOFFS
-    }
-
     # Function to determine the weight for a given Total_Difference value
     def determine_weight(value):
-        for percentile, weight in sorted(PERCENTILE_CUTOFFS.items()):
-            if value <= percentile_values[percentile]:
+        for cutoff, weight in sorted(TOTAL_DIFF_CUTOFFS.items()):
+            if value <= cutoff:
                 return weight
-        return PERCENTILE_CUTOFFS[max(PERCENTILE_CUTOFFS)]
+        return TOTAL_DIFF_CUTOFFS[max(TOTAL_DIFF_CUTOFFS)]
 
     score_percentages["weight"] = score_percentages["total_diff"].apply(
         determine_weight
