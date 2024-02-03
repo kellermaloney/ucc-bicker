@@ -58,7 +58,13 @@ def main():
         cprint("Could not import local.py, use this for local debugging.", clr.WARNING)
         return
     else:
-        local_main()
+        local_main(
+            scores=scores,
+            members=members,
+            bickerees=bickerees,
+            output=output,
+            members_info=members_info,
+        )
 
 
 if __name__ == "__main__":
