@@ -39,8 +39,8 @@ def calculate_scores(
     scores: DataFrame[ScoresSchema], bickerees: DataFrame[BickereesSchema]
 ):
     """
-    Calculate the weighted score for each bickeree, and return a new DataFrame
-    with these columns added.
+    Calculate the weighted score for each bickeree, and return two new
+    dataframes which are the scores and the member info respectively.
 
         `scores` (DataFrame[ScoresSchema]): The scores DataFrame.
         `output` (pd.DataFrame): The output DataFrame.
@@ -101,8 +101,11 @@ def calculate_scores(
         .rename(columns={0: "weighted_score"})
     )
 
-    return pd.merge(weighted_scores, bickerees, on="bickeree_number").merge(
-        avg_scores, on="bickeree_number"
+    return (
+        pd.merge(weighted_scores, bickerees, on="bickeree_number").merge(
+            avg_scores, on="bickeree_number"
+        ),
+        score_percentages,
     )
 
 

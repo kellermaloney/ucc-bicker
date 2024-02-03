@@ -33,7 +33,7 @@ def main():
         cprint("Could not validate input, exiting.", clr.FAIL)
         return
 
-    output = calculate_scores(scores, bickerees)
+    output, members_info = calculate_scores(scores, bickerees)
     # Add the lowest/highest scoring members
     output = grab_lowest_and_highest_scores(scores, output)
     # Append the rank and percentile columns
@@ -43,6 +43,9 @@ def main():
 
     output.set_index("bickeree_number", inplace=True)
     output.to_csv("bicker_output.csv")
+
+    members_info.set_index("member_email", inplace=True)
+    members_info.to_csv("bicker_members_info.csv")
 
 
 if __name__ == "__main__":
