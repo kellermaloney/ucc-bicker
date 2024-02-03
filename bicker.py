@@ -47,6 +47,19 @@ def main():
     members_info.set_index("member_email", inplace=True)
     members_info.to_csv("bicker_members_info.csv")
 
+    cprint("Output saved to bicker_output.csv", clr.OKGREEN)
+    cprint("Members info saved to bicker_members_info.csv", clr.OKGREEN)
+
+    # Run the local.py file, if it exists
+    # This is useful for local debugging that shouldn't be committed to git
+    try:
+        from local import main as local_main  # type: ignore
+    except:
+        cprint("Could not import local.py, use this for local debugging.", clr.WARNING)
+        return
+    else:
+        local_main()
+
 
 if __name__ == "__main__":
     main()

@@ -9,3 +9,6 @@ bicker_venv
 
 # Ignore output
 *.csv
+
+# Ignore logs
+local.py
