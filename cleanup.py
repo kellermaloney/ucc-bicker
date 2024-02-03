@@ -24,8 +24,12 @@ def replace_emails(
 
     for column in columns:
         if column in df.columns:
-            df = df.merge(members, left_on=column, right_on="member_email", how="left")
-
+            df = df.merge(
+                members[["member_email", "member_name"]],
+                left_on=column,
+                right_on="member_email",
+                how="left",
+            )
             # Replace the original column with the name
             df[column] = df["member_name"]
             # Drop the extra columns added by the merge
