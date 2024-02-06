@@ -50,6 +50,9 @@ def calculate_scores(
         bickerees[["bickeree_number", "bickeree_gender"]], on="bickeree_number"
     )
 
+    print(score_percentages.columns)
+    print(score_percentages.index)
+
     # Group the scores by member email
     # Then count each member's score up, and normalize them (take percentage
     # Take the value of this index, using unstack, and create new dataframe
@@ -101,8 +104,29 @@ def calculate_scores(
         .rename(columns={0: "weighted_score"})
     )
 
+    avg_scores_by_member = (
+        scores.groupby("member_email")["score"]
+        .mean()
+        .reset_index()
+        .rename(columns={"score": "avg_score"})
+    )
+    print(score_percentages.columns)
+    score_percentages = score_percentages.merge(avg_scores_by_member, on="member_email")
+
+    # Add column with the number of members who bickered each bickeree
+    num_members_per_bickeree = (
+        scores.groupby("bickeree_number")["member_email"]
+        .nunique()
+        .reset_index()
+        .rename(columns={"member_email": "num_members"})
+    )
+    bickeree_scoring_info = bickerees.merge(
+        num_members_per_bickeree[["bickeree_number", "num_members"]],
+        on="bickeree_number",
+    )
+
     return (
-        pd.merge(weighted_scores, bickerees, on="bickeree_number").merge(
+        pd.merge(weighted_scores, bickeree_scoring_info, on="bickeree_number").merge(
             avg_scores, on="bickeree_number"
         ),
         score_percentages,
