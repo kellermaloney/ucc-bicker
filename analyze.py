@@ -50,9 +50,6 @@ def calculate_scores(
         bickerees[["bickeree_number", "bickeree_gender"]], on="bickeree_number"
     )
 
-    print(score_percentages.columns)
-    print(score_percentages.index)
-
     # Group the scores by member email
     # Then count each member's score up, and normalize them (take percentage
     # Take the value of this index, using unstack, and create new dataframe
@@ -86,11 +83,11 @@ def calculate_scores(
         determine_weight
     )
 
-    avg_scores = (
+    unweighted_scores = (
         scores.groupby("bickeree_number")["score"]
         .mean()
         .reset_index()
-        .rename(columns={"score": "avg_score"})
+        .rename(columns={"score": "unweighted_score"})
     )
     score_percentages.reset_index(inplace=True)
     # Add weight to original scores
@@ -110,7 +107,6 @@ def calculate_scores(
         .reset_index()
         .rename(columns={"score": "avg_score"})
     )
-    print(score_percentages.columns)
     score_percentages = score_percentages.merge(avg_scores_by_member, on="member_email")
 
     # Add column with the number of members who bickered each bickeree
@@ -127,7 +123,7 @@ def calculate_scores(
 
     return (
         pd.merge(weighted_scores, bickeree_scoring_info, on="bickeree_number").merge(
-            avg_scores, on="bickeree_number"
+            unweighted_scores, on="bickeree_number"
         ),
         score_percentages,
     )
@@ -138,9 +134,13 @@ def calculate_ranks_and_percentiles(output: pd.DataFrame):
     with these columns added. This is based on weighted scores."""
 
     # If the weighted score column doesn't exist, return the original
-    if "weighted_score" not in output.columns:
+    if (
+        "weighted_score" not in output.columns
+        or "unweighted_score" not in output.columns
+    ):
         cprint(
-            "Cannot calculate ranks and percentiles without weighted scores.", clr.FAIL
+            "Cannot calculate ranks and percentiles without weighted/unweighted scores.",
+            clr.FAIL,
         )
         # Return the original
         return output
@@ -150,6 +150,14 @@ def calculate_ranks_and_percentiles(output: pd.DataFrame):
     modified["rank"] = (
         output["weighted_score"].rank(ascending=False, method="min").astype(int)
     )
+
+    modified["unweighted_rank"] = (
+        output["unweighted_score"].rank(ascending=False, method="min").astype(int)
+    )
+
+    # Get difference between weighted and unweighted rank
+    modified["rank_diff"] = modified["unweighted_rank"] - modified["rank"]
+
     # Calculate percentiles, where 0.99 means the bickeree is in the top 1% of all bickerees,
     # and 0.01 means the bickeree is in the bottom 1% of all bickerees
     modified["percentile"] = output["weighted_score"].rank(pct=True, ascending=True)
@@ -164,6 +172,15 @@ def calculate_ranks_and_percentiles(output: pd.DataFrame):
         "weighted_score"
     ].rank(pct=True, ascending=True)
 
+    modified["unweighted_rank_by_gender"] = (
+        modified.groupby("bickeree_gender")["unweighted_score"]
+        .rank(ascending=False, method="min")
+        .astype(int)
+    )
+    modified["rank_diff_by_gender"] = (
+        modified["unweighted_rank_by_gender"] - modified["rank_by_gender"]
+    )
+
     return modified
 
 
@@ -177,29 +194,30 @@ def grab_lowest_and_highest_scores(scores: pd.DataFrame, output: pd.DataFrame):
             "Cannot grab lowest and highest scores without bickeree_number and/or score columns.",
             clr.FAIL,
         )
-        # Return the original
-        return output
+        return output  # Return the original if required columns are missing
 
-    # Function to randomly select one member from those who gave the lowest/highest score
-    def select_random_member(sub_df):
-        return np.random.choice(sub_df["member_email"])
+    def select_random_member_and_score(sub_df):
+        selected_row = sub_df.sample(n=1)  # Randomly select one row
+        member_email = selected_row["member_email"].iloc[0]
+        score = selected_row["score"].iloc[0]
+        return member_email, score
 
-    # Group by bickeree_number and apply a custom function to find the member with the lowest and highest score
-    bickeree_stats = (
-        scores.groupby("bickeree_number")
-        .apply(
-            lambda x: pd.Series(
-                {
-                    "member_lowest_score": select_random_member(
-                        x[x["score"] == x["score"].min()]  # type: ignore
-                    ),
-                    "member_highest_score": select_random_member(
-                        x[x["score"] == x["score"].max()]  # type: ignore
-                    ),
-                }
-            )
+    # Group by bickeree_number and apply custom functions to find the member and score
+    def group_func(x):
+        lowest = x[x["score"] == x["score"].min()]
+        highest = x[x["score"] == x["score"].max()]
+        member_lowest, score_lowest = select_random_member_and_score(lowest)
+        member_highest, score_highest = select_random_member_and_score(highest)
+        return pd.Series(
+            {
+                "member_lowest_score": member_lowest,
+                "lowest_score": score_lowest,
+                "member_highest_score": member_highest,
+                "highest_score": score_highest,
+            }
         )
-        .reset_index()
-    )
 
+    bickeree_stats = scores.groupby("bickeree_number").apply(group_func).reset_index()
+
+    # Merge the new stats back into the output DataFrame
     return output.merge(bickeree_stats, on="bickeree_number")
