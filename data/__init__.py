@@ -7,6 +7,7 @@ import sys
 from pandera.typing import DataFrame
 
 from utils import cprint, clr
+import time
 
 
 class ScoresSchema(pa.DataFrameModel):
@@ -30,7 +31,7 @@ class BickereesSchema(pa.DataFrameModel):
 
     bickeree_number: int = pa.Field()
     bickeree_name: str = pa.Field()
-    bickeree_gender: int = pa.Field()
+    bickeree_gender: str = pa.Field()
 
 
 class OutputDict(TypedDict):
@@ -48,6 +49,8 @@ T = TypeVar("T", bound=pa.DataFrameModel)
 def _grab_csv(filename: str, schema: type[T]) -> DataFrame[T]:
     """Reads the given CSV file into a pandas DataFrame."""
 
+    cprint(f"Loading {filename}...", clr.OKCYAN)
+    time.sleep(0.65)
     # Read the CSV file into a pandas DataFrame and validate data types
     try:
         df = pd.read_csv(filename)
@@ -62,6 +65,7 @@ def _grab_csv(filename: str, schema: type[T]) -> DataFrame[T]:
         cprint(f"Could not validate file {filename}", clr.FAIL)
         sys.exit(1)
 
+    cprint(f"{filename} sucessfully loaded and validated.", clr.OKGREEN)
     return validated
 
 

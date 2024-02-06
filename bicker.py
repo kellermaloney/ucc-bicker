@@ -3,7 +3,7 @@ from analyze import (
     calculate_scores,
     grab_lowest_and_highest_scores,
 )
-from cleanup import replace_emails
+from cleanup import remove_duplicates_and_na_scores, replace_emails
 
 from data import load_input
 from data.validate import check_all_input
@@ -32,6 +32,9 @@ def main():
     if not check_all_input(scores, members, bickerees):
         cprint("Could not validate input, exiting.", clr.FAIL)
         return
+
+    # Remove any duplicate rows and rows with missing values from the scores DataFrame
+    scores = remove_duplicates_and_na_scores(scores)
 
     output, members_info = calculate_scores(scores, bickerees)
     # Add the lowest/highest scoring members
