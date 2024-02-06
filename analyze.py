@@ -221,3 +221,12 @@ def grab_lowest_and_highest_scores(scores: pd.DataFrame, output: pd.DataFrame):
 
     # Merge the new stats back into the output DataFrame
     return output.merge(bickeree_stats, on="bickeree_number")
+
+
+def print_stats(output: pd.DataFrame):
+    """Print basic stats for the output"""
+    cprint("Stats for the output DataFrame:", clr.HEADER)
+    cprint(f"Average weighted score: {output['weighted_score'].mean()}", clr.OKCYAN)
+    cprint(f"Average unweighted score: {output['unweighted_score'].mean()}", clr.OKCYAN)
+    cprint(f"Average weighted score by gender:\n{output.groupby("bickeree_gender")["weighted_score"].mean()}", clr.OKCYAN)
+    cprint(f"Average unweighted score by gender:\n{output.groupby("bickeree_gender")["unweighted_score"].mean()}", clr.OKCYAN)

@@ -2,6 +2,7 @@ from analyze import (
     calculate_ranks_and_percentiles,
     calculate_scores,
     grab_lowest_and_highest_scores,
+    print_stats,
 )
 from cleanup import remove_duplicates_and_na_scores, replace_emails
 
@@ -52,6 +53,8 @@ def main():
 
     cprint("Output saved to bicker_output.csv", clr.OKGREEN)
     cprint("Members info saved to bicker_members_info.csv", clr.OKGREEN)
+
+    print_stats(output)
 
     # Run the local.py file, if it exists
     # This is useful for local debugging that shouldn't be committed to git
